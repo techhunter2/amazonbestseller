@@ -19,6 +19,7 @@ headers = {
   }
 print('programme started')
 def amazon_scraping():
+  print("Scrapping is started at daily "+ config.schd_time)
   count = 1
   print("Programme Executed "+ str(count) + " times")
   driver = webdriver.Chrome(options=Options)
@@ -56,7 +57,10 @@ def amazon_scraping():
                   break
           except:
               continue
-        data = html.fromstring(response.content)
+        try:
+          data = html.fromstring(response.content)
+        except:
+          pass
         prop_data['Date'] = str(date.today())
         try:
           prop_data['Title'] =data.xpath("//span[@id='productTitle']")[0].text.strip()

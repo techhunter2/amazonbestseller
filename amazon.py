@@ -13,14 +13,20 @@ from datetime import date
 from time import strftime
 import time
 import config
+import scroll
+count = 0
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36',
   }
 print('programme started')
 def amazon_scraping():
+  print("Scrapping is started at daily "+ config.schd_time)
+  print("Programme Executed "+ str(count) + " times")
   driver = webdriver.Chrome(options=Options)
+  driver.set_page_load_timeout(20)
   all_data = []
   print("----------- Scrapping Started -----------")
+  driver.maximize_window()
   driver.get("https://www.amazon.sg/gp/bestsellers")
   categories = [li.get_attribute("href") for li in driver.find_elements(By.XPATH,".//div[@class='_p13n-zg-nav-tree-all_style_zg-browse-group__88fbz']/div/a")]
   for link in categories:
@@ -29,19 +35,21 @@ def amazon_scraping():
       time.sleep(1)
       element = driver.find_element(By.XPATH,"//a[contains(text(),'Next page')]")
       try:
-          driver.execute_script("arguments[0].scrollIntoView();", element)
+        scroll.scroll(driver, 2)
       except:
-          pass
-      time.sleep(2)
+        pass
       pro_links1 = [pro.get_attribute("href") for pro in driver.find_elements(By.XPATH,".//div[@class='zg-grid-general-faceout']/div/a[1]")]
+      print(len(pro_links1))
       element.click()
       driver.implicitly_wait(5)
-      driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-      time.sleep(2)
+      try:
+        scroll.scroll(driver, 2)
+      except:
+        pass
       pro_links = pro_links1 + [pro.get_attribute("href") for pro in driver.find_elements(By.XPATH,".//div[@class='zg-grid-general-faceout']/div/a[1]")]
       pro_rank = 1
+      print(len(pro_links))
       for url in pro_links:
-        print(url)
         prop_data = {}
         retry=0
         while True:
@@ -56,7 +64,10 @@ def amazon_scraping():
                   break
           except:
               continue
-        data = html.fromstring(response.content)
+        try:
+          data = html.fromstring(response.content)
+        except:
+          pass
         prop_data['Date'] = str(date.today())
         try:
           prop_data['Title'] =data.xpath("//span[@id='productTitle']")[0].text.strip()
@@ -100,6 +111,10 @@ def amazon_scraping():
         except:
           prop_data['Sold By'] = ''
         try:
+          prop_data['Full_filled_by'] = data.xpath('string(//div[@id="merchant-info"]//span//text())').strip()
+        except:
+          prop_data['Full_filled_by'] = ''
+        try:
           prop_data['Rating'] = data.xpath("//i[@class='a-icon a-icon-star a-star-4-5']/span")[0].text
         except:
           prop_data['Rating'] = ''
@@ -118,9 +133,11 @@ def amazon_scraping():
   df=pd.DataFrame(all_data)
   curr_time = strftime("%Y-%m-%d %H-%M-%S", time.localtime())
   df.to_csv(f'{curr_time}-amazon_scraped.csv',index=False,quoting=csv.QUOTE_ALL, encoding='utf-8') 
+  print(f"Scrapping is done next scrapping will begin at {config.schd_time}")
 
 # Main execution of the programme is starting from here.
-print("Scrapping will start at "+ config.schd_time)
+count+=1
+print("Scrapping will start at daily "+ config.schd_time)
 def job():
   amazon_scraping()
 schedule.every().day.at(config.schd_time).do(job)
