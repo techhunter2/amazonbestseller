@@ -134,7 +134,6 @@ def amazon_scraping():
   curr_time = strftime("%Y-%m-%d %H-%M-%S", time.localtime())
   df.to_csv(f'{curr_time}-amazon_scraped.csv',index=False,quoting=csv.QUOTE_ALL, encoding='utf-8') 
   print(f"Scrapping is done next scrapping will begin at {config.schd_time}")
-
 # Main execution of the programme is starting from here.
 count+=1
 print("Scrapping will start at daily "+ config.schd_time)
